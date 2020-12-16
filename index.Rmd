@@ -9,9 +9,8 @@ output:
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(dplyr)
-library(ggplot2)
 
-ggthemr::ggthemr('light')
+wcl <- readRDS('wcl.rds')
 ```
 
 Column {data-width=650}
@@ -20,10 +19,7 @@ Column {data-width=650}
 ### Chart A
 
 ```{r}
-p <- ggplot(iris, aes(Sepal.Length, Sepal.Width)) + 
-  geom_point(aes(color = Species)) + 
-  theme_minimal()
-plotly::ggplotly(p)
+wcl$plot()
   
 ```
 
