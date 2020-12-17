@@ -96,7 +96,7 @@ Row {data-height=750}
 ### Damage Per Second
 
 ```{r}
-q <- 0.5
+q <- 0.75
 # data <- report %>% 
 #   select(class, spec, dps) %>% {
 #     dat <- .
@@ -129,13 +129,16 @@ q <- 0.5
 data <- report %>%
   select(class, spec, dps) %>% {
     dat <- .
+    
     temp <- group_by(dat, class, spec) %>%
       summarise(
-        dps_median = quantile(dps, q, na.rm = TRUE),
+        dps_median = quantile(dps, probs = q, na.rm = TRUE),
         text_pos = median(dps, na.rm = TRUE), 
         n = n(),
         .groups = 'drop'
       )
+    temp <- mutate(temp, dps_median = bayes_mean(dps_median, n))
+    
     right_join(temp, dat, by = c('class', 'spec'))
   } %>%
   mutate(name = paste(class, spec))
@@ -143,7 +146,7 @@ data <- report %>%
 p <- data %>% 
   ggplot(aes(reorder(name, dps_median), dps)) +
   geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, text_pos, spec), aes(name, text_pos, label = spec), alpha = 0.7, size = 5) + 
+  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = -500, alpha = 0.7, size = 5) + 
   coord_flip() + 
   scale_fill_manual(values = pal_wow) + 
   theme_minimal() + 
