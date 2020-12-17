@@ -4,7 +4,7 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: fill
-runtime: shiny
+# runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -165,6 +165,6 @@ Row
 Row {data-height=50} 
 -----------------------------------------------------------------------
 ```{r}
-renderText({sprintf('data updated on %s', file_info$mtime)})
+# renderText({sprintf('data updated on %s', file_info$mtime)})
 ```
 
