@@ -96,7 +96,7 @@ Row {data-height=750}
 ### Damage Per Second
 
 ```{r}
-q <- 0.75
+q <- 0.5
 # data <- report %>% 
 #   select(class, spec, dps) %>% {
 #     dat <- .
