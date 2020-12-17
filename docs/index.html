@@ -820,7 +820,6 @@ html, body {
 </div><!--/.container-->
 </div><!--/.navbar-->
 
-<img class="mobile-figure" data-mobile-figure-id=fig1 src="index_files/figure-html/unnamed-chunk-1-1.mb.png" />
 <script type="text/javascript">
 
 
@@ -2613,30 +2612,60 @@ window.FlexDashboardComponents.push({
 
 <div id="dashboard-container">
 
-<div id="column" class="section level2" data-width="650">
-<h2>Column</h2>
-<div id="chart-a" class="section level3">
-<h3>Chart A</h3>
+<div id="row" class="section level2">
+<h2>Row</h2>
+<div id="players" class="section level3">
+<h3>Players</h3>
 <div class="knitr-options" data-fig-width="576" data-fig-height="460">
 
 </div>
-<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" width="576" data-figure-id=fig1 /></p>
+<span class="value-output" data-color="#3d98d3">6209</span>
+</div>
+<div id="dps-median" class="section level3">
+<h3>Dps Median</h3>
+<div class="knitr-options" data-fig-width="576" data-fig-height="460">
+
+</div>
+<span class="value-output" data-color="#f9791e">2428.05</span>
+</div>
+<div id="ilvl-median" class="section level3">
+<h3>Ilvl Median</h3>
+<div class="knitr-options" data-fig-width="576" data-fig-height="460">
+
+</div>
+<span class="value-output" data-color="#5e35b1">191</span>
 </div>
 </div>
-<div id="column-1" class="section level2" data-width="350">
-<h2>Column</h2>
-<div id="chart-b" class="section level3">
-<h3>Chart B</h3>
+<div id="row-1" class="section level2">
+<h2>Row</h2>
+<div id="damage-per-second" class="section level3">
+<h3>Damage Per Second</h3>
 <div class="knitr-options" data-fig-width="576" data-fig-height="460">
 
 </div>
 </div>
-<div id="chart-c" class="section level3">
-<h3>Chart C</h3>
+</div>
+<div id="row-2" class="section level2">
+<h2>Row</h2>
+<div id="covenant" class="section level3">
+<h3>Covenant</h3>
 <div class="knitr-options" data-fig-width="576" data-fig-height="460">
 
 </div>
 </div>
+<div id="comming-soon" class="section level3">
+<h3>comming soon</h3>
+<div class="knitr-options" data-fig-width="576" data-fig-height="460">
+
+</div>
+</div>
+</div>
+<div id="row-3" class="section level2" data-height="50">
+<h2>Row</h2>
+<div class="knitr-options" data-fig-width="576" data-fig-height="460">
+
+</div>
+<pre><code>data updated on 2020-12-16 15:57:31</code></pre>
 </div>
 
 </div>
@@ -2662,7 +2691,7 @@ $(document).ready(function () {
   FlexDashboard.init({
     theme: "cosmo",
     fillPage: true,
-    orientation: "columns",
+    orientation: "rows",
     storyboard: false,
     defaultFigWidth: 576,
     defaultFigHeight: 460,

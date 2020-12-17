@@ -2,39 +2,169 @@
 title: "wow dps statistic"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(dplyr)
+library(ggplot2)
+library(plotly)
+
+bayes_mean <- function(dps, n) {
+  dps * n / (n + mean(n)) + mean(dps) * mean(n) / (n + mean(n))
+}
+
+pal_wow <- c(
+  'Hunter' = '#A9D271',
+  'Shaman' = '#0070DE',
+  'Warlock' = '#8787ED',
+  'Mage' = '#40C7EB',
+  'DeathKnight' = '#C41F3B',
+  'Death Knight' = '#C41F3B',
+  'Warrior' = '#C79C6E',
+  'Druid' = '#FF7D0A',
+  'DemonHunter' = '#A330C9',
+  'Demon Hunter' = '#A330C9',
+  'Priest' = '#FFFFFF',
+  'Paladin' = '#F58CBA',
+  'Rogue' = '#FFF569',
+  'Monk' = '#00FF96',
+  'Other' = 'grey',
+
+  'hunter' = '#A9D271',
+  'shaman' = '#0070DE',
+  'warlock' = '#8787ED',
+  'mage' = '#40C7EB',
+  'deathknight' = '#C41F3B',
+  'death knight' = '#C41F3B',
+  'warrior' = '#C79C6E',
+  'druid' = '#FF7D0A',
+  'demonhunter' = '#A330C9',
+  'demon hunter' = '#A330C9',
+  'priest' = '#FFFFFF',
+  'paladin' = '#F58CBA',
+  'rogue' = '#FFF569',
+  'monk' = '#00FF96',
+  'other' = 'grey'
+)
+
 
 wcl <- readRDS('wcl.rds')
+file_info <- file.info('wcl.rds')
+report <- wcl$report %>% 
+  tidyr::unnest(report) %>% 
+  filter(
+    !is.na(class), 
+    !is.na(spec), 
+    !stringr::str_detect(
+      spec,
+      'Holy|Restoration|Mistweaver|Protection|Blood|Vengeance|Discipline|Guardian|unknown|,')
+  )
 ```
 
-Column {data-width=650}
+Row
 -----------------------------------------------------------------------
 
-### Chart A
+### Players
+```{r}
+valueBox(n_distinct(report$name), color = '#3d98d3')
+```
+
+### Dps Median
+```{r}
+valueBox(median(report$dps, na.rm = TRUE), color = '#f9791e')
+```
+
+### Ilvl Median
+```{r}
+valueBox(median(report$ilvl, na.rm = TRUE), color = '#5e35b1')
+```
+
+
+Row {data-height=750}
+-----------------------------------------------------------------------
+
+### Damage Per Second
 
 ```{r}
-wcl$plot()
+q <- 0.5
+# data <- report %>% 
+#   select(class, spec, dps) %>% {
+#     dat <- .
+#     temp <- group_by(dat, class, spec) %>% 
+#       summarise(
+#         dps_median = quantile(dps, q, na.rm = TRUE), 
+#         n = n(), 
+#         .groups = 'drop'
+#       )
+#     right_join(temp, dat, by = c('class', 'spec'))
+#   } %>% 
+#   mutate(name = paste(class, spec))
+# 
+# tibble::enframe(pal_wow) %>% 
+#   right_join(data, by = c('name' = 'class')) %>% {
+#     . <- .[order(.$dps_median), ]
+#     .$name.y <- factor(.$name.y, levels = as.character(unique(.$name.y)))
+#     .
+#   } %>% 
+#   plot_ly(
+#     x = ~ dps, 
+#     y = ~ name.y, 
+#     type = 'box', 
+#     color= ~name, 
+#     colors = pal_wow, 
+#     hoverinfo = 'y'
+#   ) %>% 
+#   hide_legend()
+
+data <- report %>%
+  select(class, spec, dps) %>% {
+    dat <- .
+    temp <- group_by(dat, class, spec) %>%
+      summarise(
+        dps_median = quantile(dps, q, na.rm = TRUE),
+        n = n(),
+        .groups = 'drop'
+      )
+    right_join(temp, dat, by = c('class', 'spec'))
+  } %>%
+  mutate(name = paste(class, spec))
+
+p <- data %>% 
+  ggplot(aes(reorder(name, dps_median), dps)) +
+  geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
+  geom_text(data = distinct(data, name, spec), aes(name, 500, label = spec)) + 
+  coord_flip() + 
+  scale_fill_manual(values = pal_wow) + 
+  theme_minimal() + 
+  labs(x = 'spec')
+
+ggplotly(p) %>% 
+  layout(showlegend = FALSE)
   
 ```
 
-Column {data-width=350}
+Row
 -----------------------------------------------------------------------
 
-### Chart B
+### Covenant
 
 ```{r}
 
 ```
 
-### Chart C
+### comming soon
 
 ```{r}
 
+```
+
+Row {data-height=50} 
+-----------------------------------------------------------------------
+```{r}
+renderText({sprintf('data updated on %s', file_info$mtime)})
 ```
 
