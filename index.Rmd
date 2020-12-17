@@ -51,6 +51,12 @@ pal_wow <- c(
   'other' = 'grey'
 )
 
+pal_covenant <- c(
+  'nightfae' = '#c851ec',
+  'venthyr' = '#e02d2d',
+  'kyrian' = '#a9dcfc',
+  'necrolord' = '#96b364'
+)
 
 wcl <- readRDS('wcl.rds')
 file_info <- file.info('wcl.rds')
@@ -90,7 +96,7 @@ Row {data-height=750}
 ### Damage Per Second
 
 ```{r}
-q <- 0.5
+q <- 0.75
 # data <- report %>% 
 #   select(class, spec, dps) %>% {
 #     dat <- .
@@ -126,6 +132,7 @@ data <- report %>%
     temp <- group_by(dat, class, spec) %>%
       summarise(
         dps_median = quantile(dps, q, na.rm = TRUE),
+        text_pos = median(dps, na.rm = TRUE), 
         n = n(),
         .groups = 'drop'
       )
@@ -136,35 +143,20 @@ data <- report %>%
 p <- data %>% 
   ggplot(aes(reorder(name, dps_median), dps)) +
   geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, spec), aes(name, 500, label = spec)) + 
+  geom_text(data = distinct(data, name, text_pos, spec), aes(name, text_pos, label = spec), alpha = 0.7, size = 5) + 
   coord_flip() + 
   scale_fill_manual(values = pal_wow) + 
   theme_minimal() + 
-  labs(x = 'spec')
+  labs(x = NULL)
 
 ggplotly(p) %>% 
-  layout(showlegend = FALSE)
+  layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
   
-```
-
-Row
------------------------------------------------------------------------
-
-### Covenant
-
-```{r}
-
-```
-
-### comming soon
-
-```{r}
-
 ```
 
 Row {data-height=50} 
 -----------------------------------------------------------------------
 ```{r}
-# renderText({sprintf('data updated on %s', file_info$mtime)})
+sprintf('data updated on %s', file_info$mtime)
 ```
 
