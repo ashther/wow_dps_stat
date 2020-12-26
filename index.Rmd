@@ -2,7 +2,7 @@
 title: "wow dps statistic"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: rows
+    orientation: columns
     vertical_layout: fill
 # runtime: shiny
 ---
@@ -73,25 +73,7 @@ report <- wcl$report %>%
 q <- 0.75
 ```
 
-Row
------------------------------------------------------------------------
-
-### Players
-```{r}
-valueBox(n_distinct(report$name), color = '#3d98d3')
-```
-
-### Dps Median
-```{r}
-valueBox(median(report$dps, na.rm = TRUE), color = '#f9791e')
-```
-
-### Ilvl Median
-```{r}
-valueBox(median(report$ilvl, na.rm = TRUE), color = '#5e35b1')
-```
-
-Row {data-height=800}
+Column {data-width=760}
 -----------------------------------------------------------------------
 
 ### Damage Per Second
@@ -146,19 +128,36 @@ data <- report %>%
 p <- data %>% 
   ggplot(aes(reorder(name, dps_median), dps)) +
   geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) + 
+  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 5) + 
   coord_flip() + 
   scale_fill_manual(values = pal_wow) + 
   theme_minimal() + 
-  labs(x = NULL)
+  labs(x = NULL, y = sprintf('updated @ %s', as.character(file_info$mtime)))
 
 ggplotly(p) %>% 
   layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
   
 ```
 
-Row 
+
+Column
 -----------------------------------------------------------------------
+
+### Players
+```{r}
+valueBox(n_distinct(report$name), color = '#3d98d3')
+```
+
+### Dps Median
+```{r}
+valueBox(median(report$dps, na.rm = TRUE), color = '#f9791e')
+```
+
+### Ilvl Median
+```{r}
+valueBox(median(report$ilvl, na.rm = TRUE), color = '#5e35b1')
+```
+
 
 ### Variance
 
@@ -190,6 +189,7 @@ ggplotly(p, tooltip = 'class') %>%
   layout(showlegend = FALSE)
 
 ```
+
 
 ### Hunter's Covenant
 
@@ -238,11 +238,3 @@ ggplotly(p, tooltip = 'label') %>%
   layout(showlegend = FALSE)
 
 ```
-
-
-Row {data-height=20} 
------------------------------------------------------------------------
-```{r}
-sprintf('data updated on %s', file_info$mtime)
-```
-
