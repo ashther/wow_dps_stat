@@ -73,41 +73,13 @@ report <- wcl$report %>%
 q <- 0.75
 ```
 
+
 Column {data-width=760}
 -----------------------------------------------------------------------
 
-### Damage Per Second
+### Damage Per Second @ `r as.character(file_info$mtime)` {data-height=800}
 
 ```{r}
-# data <- report %>% 
-#   select(class, spec, dps) %>% {
-#     dat <- .
-#     temp <- group_by(dat, class, spec) %>% 
-#       summarise(
-#         dps_median = quantile(dps, q, na.rm = TRUE), 
-#         n = n(), 
-#         .groups = 'drop'
-#       )
-#     right_join(temp, dat, by = c('class', 'spec'))
-#   } %>% 
-#   mutate(name = paste(class, spec))
-# 
-# tibble::enframe(pal_wow) %>% 
-#   right_join(data, by = c('name' = 'class')) %>% {
-#     . <- .[order(.$dps_median), ]
-#     .$name.y <- factor(.$name.y, levels = as.character(unique(.$name.y)))
-#     .
-#   } %>% 
-#   plot_ly(
-#     x = ~ dps, 
-#     y = ~ name.y, 
-#     type = 'box', 
-#     color= ~name, 
-#     colors = pal_wow, 
-#     hoverinfo = 'y'
-#   ) %>% 
-#   hide_legend()
-
 data <- report %>%
   select(class, spec, dps) %>% {
     dat <- .
@@ -128,36 +100,16 @@ data <- report %>%
 p <- data %>% 
   ggplot(aes(reorder(name, dps_median), dps)) +
   geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 5) + 
+  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) + 
   coord_flip() + 
   scale_fill_manual(values = pal_wow) + 
   theme_minimal() + 
-  labs(x = NULL, y = sprintf('updated @ %s', as.character(file_info$mtime)))
+  labs(x = NULL)
 
 ggplotly(p) %>% 
   layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
   
 ```
-
-
-Column
------------------------------------------------------------------------
-
-### Players
-```{r}
-valueBox(n_distinct(report$name), color = '#3d98d3')
-```
-
-### Dps Median
-```{r}
-valueBox(median(report$dps, na.rm = TRUE), color = '#f9791e')
-```
-
-### Ilvl Median
-```{r}
-valueBox(median(report$ilvl, na.rm = TRUE), color = '#5e35b1')
-```
-
 
 ### Variance
 
@@ -190,32 +142,13 @@ ggplotly(p, tooltip = 'class') %>%
 
 ```
 
+Column
+-----------------------------------------------------------------------
 
 ### Hunter's Covenant
 
 ```{r}
-# data <- transmute(report, name = paste(class, spec), url_report) %>% 
-#   widyr::pairwise_count(name, url_report) %>% 
-#   filter(n >= quantile(n, 0.8))
-# net <- graph_from_data_frame(data, directed = FALSE)
-# E(net)$weight <- 1 / E(net)$n
-# 
-# eg <- evcent(net, directed = FALSE, weights = E(net)$n)$vector
-# members <- membership(cluster_fast_greedy(simplify(net)))
-# 
-# net_d3 <- networkD3::igraph_to_networkD3(net, group = members)
-# 
-# networkD3::forceNetwork(Links = net_d3$links, Nodes = net_d3$nodes, 
-#              Source = 'source', Target = 'target', 
-#              NodeID = 'name', Group = 'group', zoom = TRUE)
-
-# p <- ggraph(net) + 
-#   geom_edge_link(aes(edge_alpha = 1 / weight), show.legend = FALSE) + 
-#   geom_node_point(aes(size = eg), show.legend = FALSE) + 
-#   geom_node_text(aes(label = V(net)$name), repel = TRUE, show.legend = FALSE) + 
-#   theme_minimal()
-
-data <- filter(report, class == 'Hunter') %>% 
+data <- filter(report, class == 'Hunter' & !is.na(covenant) & !is.na(spec)) %>% 
   mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
          var_all = var(dps, na.rm = TRUE)) %>% 
   group_by(spec, covenant, dps_all, var_all) %>% 
@@ -234,7 +167,105 @@ p <- data %>%
   scale_color_manual(values = pal_covenant) + 
   theme_minimal()
 
-ggplotly(p, tooltip = 'label') %>% 
-  layout(showlegend = FALSE)
+ggplotly(p, tooltip =  c('spec', 'covenant', 'n')) %>% 
+  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
+  config(displayModeBar = FALSE)
 
+```
+
+### Shaman's Covenant
+
+```{r}
+
+data <- filter(report, class == 'Shaman' & !is.na(covenant) & !is.na(spec)) %>% 
+  mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
+         var_all = var(dps, na.rm = TRUE)) %>% 
+  group_by(spec, covenant, dps_all, var_all) %>% 
+  summarise(var = var(dps, na.rm = TRUE), 
+            dps = quantile(dps, q, na.rm = TRUE), 
+            n = n(), 
+            .groups = 'drop')
+
+p <- data %>% 
+  ggplot(aes(dps, var, label = spec)) +
+  geom_point(aes(size = n, color = covenant), show.legend = FALSE) +
+  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
+  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
+  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
+  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
+  scale_color_manual(values = pal_covenant) + 
+  theme_minimal() + 
+  labs(x = NULL, y = NULL)
+
+ggplotly(p, tooltip =  c('spec', 'covenant', 'n')) %>% 
+  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
+  config(displayModeBar = FALSE)
+
+```
+
+### Paladin's Covenant
+
+```{r}
+
+data <- filter(report, class == 'Paladin' & !is.na(covenant) & !is.na(spec)) %>% 
+  mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
+         var_all = var(dps, na.rm = TRUE)) %>% 
+  group_by(spec, covenant, dps_all, var_all) %>% 
+  summarise(var = var(dps, na.rm = TRUE), 
+            dps = quantile(dps, q, na.rm = TRUE), 
+            n = n(), 
+            .groups = 'drop')
+
+p <- data %>% 
+  ggplot(aes(dps, var, label = spec)) +
+  geom_point(aes(size = n, color = covenant), show.legend = FALSE) +
+  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
+  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
+  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
+  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
+  scale_color_manual(values = pal_covenant) + 
+  theme_minimal()
+
+ggplotly(p, tooltip = c('spec', 'covenant', 'n')) %>% 
+  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
+  config(displayModeBar = FALSE)
+
+```
+
+Column {data-width=50}
+-----------------------------------------------------------------------
+
+### Players 
+```{r}
+valueBox(n_distinct(report$name), color = 'grey', icon = 'fa-users')
+```
+
+### Dps Median
+```{r}
+valueBox(median(report$dps, na.rm = TRUE), color = 'grey', icon = 'fa-weight')
+```
+
+### Ilvl Median
+```{r}
+valueBox(median(report$ilvl, na.rm = TRUE), color = 'grey', icon = 'fa-tshirt')
+```
+
+### nightfae  
+```{r}
+valueBox(sum(report$covenant == 'nightfae', na.rm = TRUE), color = pal_covenant['nightfae'])
+```
+
+### venthyr  
+```{r}
+valueBox(sum(report$covenant == 'venthyr', na.rm = TRUE), color = pal_covenant['venthyr'])
+```
+
+### kyrian  
+```{r}
+valueBox(sum(report$covenant == 'kyrian', na.rm = TRUE), color = pal_covenant['kyrian'])
+```
+
+### necrolord   
+```{r}
+valueBox(sum(report$covenant == 'necrolord', na.rm = TRUE), color = pal_covenant['necrolord'])
 ```
