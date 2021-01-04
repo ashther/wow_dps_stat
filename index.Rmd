@@ -2,7 +2,7 @@
 title: "wow dps statistic"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
 # runtime: shiny
 ---
@@ -73,166 +73,7 @@ report <- wcl$report %>%
 q <- 0.75
 ```
 
-
-Column {data-width=760}
------------------------------------------------------------------------
-
-### Damage Per Second @ `r as.character(file_info$mtime)` {data-height=800}
-
-```{r}
-data <- report %>%
-  select(class, spec, dps) %>% {
-    dat <- .
-    
-    temp <- group_by(dat, class, spec) %>%
-      summarise(
-        dps_median = quantile(dps, probs = q, na.rm = TRUE),
-        text_pos = quantile(dps, 0.75, na.rm = TRUE), 
-        n = n(),
-        .groups = 'drop'
-      )
-    temp <- mutate(temp, dps_median = bayes_mean(dps_median, n))
-    
-    right_join(temp, dat, by = c('class', 'spec'))
-  } %>%
-  mutate(name = paste(class, spec))
-
-p <- data %>% 
-  ggplot(aes(reorder(name, dps_median), dps)) +
-  geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) + 
-  coord_flip() + 
-  scale_fill_manual(values = pal_wow) + 
-  theme_minimal() + 
-  labs(x = NULL)
-
-ggplotly(p) %>% 
-  layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
-  
-```
-
-### Variance
-
-```{r}
-data <- report %>%
-  mutate(
-    dps_all = quantile(dps, q, na.rm = TRUE),
-    var_all = var(dps, na.rm = TRUE)
-  ) %>%
-  group_by(class, spec, dps_all, var_all) %>%
-  summarise(
-    var = var(dps, na.rm = TRUE),
-    dps = quantile(dps, q, na.rm = TRUE),
-    n = n(),
-    .groups = 'drop'
-  )
-
-p <- data %>% 
-  ggplot(aes(dps, var)) +
-  geom_point(aes(size = n ^ 2, color = class), show.legend = FALSE) +
-  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
-  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
-  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
-  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
-  scale_color_manual(values = pal_wow) + 
-  theme_minimal()
-
-ggplotly(p, tooltip = 'class') %>% 
-  layout(showlegend = FALSE)
-
-```
-
-Column
------------------------------------------------------------------------
-
-### Hunter's Covenant
-
-```{r}
-data <- filter(report, class == 'Hunter' & !is.na(covenant) & !is.na(spec)) %>% 
-  mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
-         var_all = var(dps, na.rm = TRUE)) %>% 
-  group_by(spec, covenant, dps_all, var_all) %>% 
-  summarise(var = var(dps, na.rm = TRUE), 
-            dps = quantile(dps, q, na.rm = TRUE), 
-            n = n(), 
-            .groups = 'drop')
-
-p <- data %>% 
-  ggplot(aes(dps, var, label = spec)) +
-  geom_point(aes(size = n, color = covenant), show.legend = FALSE) +
-  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
-  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
-  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
-  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
-  scale_color_manual(values = pal_covenant) + 
-  theme_minimal()
-
-ggplotly(p, tooltip =  c('spec', 'covenant', 'n')) %>% 
-  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
-  config(displayModeBar = FALSE)
-
-```
-
-### Shaman's Covenant
-
-```{r}
-
-data <- filter(report, class == 'Shaman' & !is.na(covenant) & !is.na(spec)) %>% 
-  mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
-         var_all = var(dps, na.rm = TRUE)) %>% 
-  group_by(spec, covenant, dps_all, var_all) %>% 
-  summarise(var = var(dps, na.rm = TRUE), 
-            dps = quantile(dps, q, na.rm = TRUE), 
-            n = n(), 
-            .groups = 'drop')
-
-p <- data %>% 
-  ggplot(aes(dps, var, label = spec)) +
-  geom_point(aes(size = n, color = covenant), show.legend = FALSE) +
-  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
-  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
-  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
-  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
-  scale_color_manual(values = pal_covenant) + 
-  theme_minimal() + 
-  labs(x = NULL, y = NULL)
-
-ggplotly(p, tooltip =  c('spec', 'covenant', 'n')) %>% 
-  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
-  config(displayModeBar = FALSE)
-
-```
-
-### Paladin's Covenant
-
-```{r}
-
-data <- filter(report, class == 'Paladin' & !is.na(covenant) & !is.na(spec)) %>% 
-  mutate(dps_all = quantile(dps, q, na.rm = TRUE), 
-         var_all = var(dps, na.rm = TRUE)) %>% 
-  group_by(spec, covenant, dps_all, var_all) %>% 
-  summarise(var = var(dps, na.rm = TRUE), 
-            dps = quantile(dps, q, na.rm = TRUE), 
-            n = n(), 
-            .groups = 'drop')
-
-p <- data %>% 
-  ggplot(aes(dps, var, label = spec)) +
-  geom_point(aes(size = n, color = covenant), show.legend = FALSE) +
-  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
-  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
-  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
-  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
-  scale_color_manual(values = pal_covenant) + 
-  theme_minimal()
-
-ggplotly(p, tooltip = c('spec', 'covenant', 'n')) %>% 
-  layout(showlegend = FALSE, margin = list(l=0.1, r=0.1, b=0.1, t=0.1)) %>% 
-  config(displayModeBar = FALSE)
-
-```
-
-Column {data-width=50}
+Row 
 -----------------------------------------------------------------------
 
 ### Players 
@@ -269,3 +110,83 @@ valueBox(sum(report$covenant == 'kyrian', na.rm = TRUE), color = pal_covenant['k
 ```{r}
 valueBox(sum(report$covenant == 'necrolord', na.rm = TRUE), color = pal_covenant['necrolord'])
 ```
+
+
+Row 
+-----------------------------------------------------------------------
+
+### Damage Per Second @ `r as.character(file_info$mtime)` {data-height=800}
+
+```{r}
+data <- report %>%
+  select(class, spec, dps) %>% {
+    dat <- .
+    
+    temp <- group_by(dat, class, spec) %>%
+      summarise(
+        dps_median = quantile(dps, probs = q, na.rm = TRUE),
+        text_pos = quantile(dps, 0.75, na.rm = TRUE), 
+        n = n(),
+        .groups = 'drop'
+      )
+    temp <- mutate(temp, dps_median = bayes_mean(dps_median, n))
+    
+    right_join(temp, dat, by = c('class', 'spec'))
+  } %>%
+  mutate(name = paste(class, spec))
+
+p <- data %>% 
+  ggplot(aes(reorder(name, dps_median), dps)) +
+  geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
+  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) + 
+  coord_flip() + 
+  scale_fill_manual(values = pal_wow) + 
+  theme_minimal() + 
+  labs(x = NULL)
+
+ggplotly(p) %>% 
+  layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
+  
+```
+
+Row 
+-----------------------------------------------------------------------
+
+### Variance
+
+```{r}
+data <- report %>%
+  mutate(
+    dps_all = quantile(dps, q, na.rm = TRUE),
+    var_all = var(dps, na.rm = TRUE)
+  ) %>%
+  group_by(class, spec, dps_all, var_all) %>%
+  summarise(
+    var = var(dps, na.rm = TRUE),
+    dps = quantile(dps, q, na.rm = TRUE),
+    n = n(),
+    .groups = 'drop'
+  )
+
+p <- data %>% 
+  ggplot(aes(dps, var)) +
+  geom_point(aes(size = n ^ 2, color = class), show.legend = FALSE) +
+  geom_hline(aes(yintercept = var_all), linetype = 'dashed', color = 'grey') +
+  geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
+  geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
+  scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
+  scale_color_manual(values = pal_wow) + 
+  theme_minimal()
+
+ggplotly(p, tooltip = 'class') %>% 
+  layout(showlegend = FALSE)
+
+```
+
+### coming soon
+
+```{r}
+
+```
+
+
