@@ -22,33 +22,15 @@ pal_wow <- c(
   'Shaman' = '#0070DE',
   'Warlock' = '#8787ED',
   'Mage' = '#40C7EB',
-  'DeathKnight' = '#C41F3B',
   'Death Knight' = '#C41F3B',
   'Warrior' = '#C79C6E',
   'Druid' = '#FF7D0A',
-  'DemonHunter' = '#A330C9',
   'Demon Hunter' = '#A330C9',
   'Priest' = '#FFFFFF',
   'Paladin' = '#F58CBA',
   'Rogue' = '#FFF569',
   'Monk' = '#00FF96',
-  'Other' = 'grey',
-
-  'hunter' = '#A9D271',
-  'shaman' = '#0070DE',
-  'warlock' = '#8787ED',
-  'mage' = '#40C7EB',
-  'deathknight' = '#C41F3B',
-  'death knight' = '#C41F3B',
-  'warrior' = '#C79C6E',
-  'druid' = '#FF7D0A',
-  'demonhunter' = '#A330C9',
-  'demon hunter' = '#A330C9',
-  'priest' = '#FFFFFF',
-  'paladin' = '#F58CBA',
-  'rogue' = '#FFF569',
-  'monk' = '#00FF96',
-  'other' = 'grey'
+  'Other' = 'grey'
 )
 
 pal_covenant <- c(
@@ -175,7 +157,7 @@ p <- data %>%
   geom_vline(aes(xintercept = dps_all), linetype = 'dashed', color = 'grey') +
   geom_text(aes(dps, var, label = spec), alpha = 0.6, size = 3) + 
   scale_y_continuous(labels = function(x)format(x, scientific = TRUE)) +
-  scale_color_manual(values = pal_wow) + 
+  scale_color_manual(values = pal_wow) +
   theme_minimal()
 
 ggplotly(p, tooltip = 'class') %>% 
