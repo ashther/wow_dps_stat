@@ -1,7 +1,10 @@
 #!/usr/lib64/R/bin/Rscript
 wcl <- wow::WCL$new()
-wcl$get_report(n = 500)
-saveRDS(wcl, 'wcl.rds')
+wcl$get_report('n', n = 300)
+saveRDS(wcl, 'wcl_n.rds')
+wcl <- wow::WCL$new()
+wcl$get_report('m', n = 300)
+saveRDS(wcl, 'wcl_m.rds')
 Sys.setenv(RSTUDIO_PANDOC='/usr/lib/rstudio-server/bin/pandoc')
 rmarkdown::render('index.Rmd', output_dir = 'docs', quiet = FALSE)
 system('git add *')
