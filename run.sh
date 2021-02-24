@@ -12,9 +12,12 @@ saveRDS(wcl, 'wcl_n.rds')
 con <- dbConnect(SQLite(), 'wcl.sqlite')
 report <- tidyr::unnest(wcl$report, report) %>% 
   select(-id_page, -time_death) %>% 
-  mutate(talent = purrr::map_chr(talent, ~ tryCatch({
-    paste0(.x$value, collapse = ',')
-  }, error = function(e) NA_character_)))
+  mutate(
+    talent = purrr::map_chr(talent, ~ tryCatch({
+      paste0(.x$value, collapse = ',')
+    }, error = function(e) NA_character_)), 
+    date = as.character(Sys.Date())
+  )
 dbWriteTable(con, 'report', report, row.names = FALSE, append = TRUE)
 dbDisconnect(con)
 
