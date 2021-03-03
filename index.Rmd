@@ -49,8 +49,14 @@ report <- wcl$report %>%
     !is.na(spec), 
     !stringr::str_detect(
       spec,
-      'Holy|Restoration|Mistweaver|Protection|Blood|Vengeance|Discipline|Guardian|unknown|Brewmaster|,')
+      'Holy|Restoration|Mistweaver|Protection|Blood|Vengeance|Discipline|Guardian|unknown|Brewmaster|,'), 
+    class %in% names(pal_wow), 
+    !grepl('specs-warcraft', spec)
   )
+
+limit_top <- quantile(report$dps, 0.75, na.rm = TRUE) + 1.5 * IQR(report$dps, na.rm = TRUE)
+limit_bottom <- quantile(report$dps, 0.25, na.rm = TRUE) - 1.5 * IQR(report$dps, na.rm = TRUE)
+report <- filter(report, between(dps, limit_bottom, limit_top))
 
 # wcl_m <- readRDS('wcl_m.rds')
 # file_info_m <- file.info('wcl_m.rds')
