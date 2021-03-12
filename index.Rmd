@@ -12,6 +12,7 @@ library(flexdashboard)
 library(dplyr)
 library(ggplot2)
 library(plotly)
+library(RSQLite)
 
 bayes_mean <- function(dps, n) {
   dps * n / (n + mean(n)) + mean(dps) * mean(n) / (n + mean(n))
@@ -39,6 +40,28 @@ pal_covenant <- c(
   'kyrian' = '#a9dcfc',
   'necrolord' = '#96b364'
 )
+
+con <- dbConnect(SQLite(), 'wcl.sqlite')
+data_hist <- dbGetQuery(
+  con, 
+  'SELECT
+     `date`, class, spec, COUNT(1) AS n
+   FROM
+     report
+   WHERE spec <> "NA"
+   AND class NOT LIKE "%specs-warcraft%"
+   AND spec NOT LIKE "%specs-warcraft%"
+   GROUP BY `date`, class, spec;'
+) %>% 
+  as_tibble()
+dbDisconnect(con)
+
+data_hist <- data_hist %>% 
+  group_by(date) %>% 
+  group_modify(~ {
+    mutate(.x, n = n / sum(n))
+  }) %>% 
+  ungroup()
 
 wcl <- readRDS('wcl_n.rds')
 file_info <- file.info('wcl_n.rds')
@@ -101,21 +124,22 @@ valueBox(sum(report$covenant == 'nightfae', na.rm = TRUE), color = pal_covenant[
 valueBox(sum(report$covenant == 'venthyr', na.rm = TRUE), color = pal_covenant['venthyr'])
 ```
 
-### kyrian  
-```{r}
-valueBox(sum(report$covenant == 'kyrian', na.rm = TRUE), color = pal_covenant['kyrian'])
-```
-
 ### necrolord   
 ```{r}
 valueBox(sum(report$covenant == 'necrolord', na.rm = TRUE), color = pal_covenant['necrolord'])
 ```
 
+### kyrian  
+```{r}
+valueBox(sum(report$covenant == 'kyrian', na.rm = TRUE), color = pal_covenant['kyrian'])
+```
+
+
 
 Row 
 -----------------------------------------------------------------------
 
-### Damage Per Second in Nathria @ `r as.character(file_info$mtime)` {data-height=800}
+### Damage Per Second in Nathria @ `r as.character(file_info$mtime)` {data-height=1000}
 
 ```{r}
 data <- report %>%
@@ -135,22 +159,29 @@ data <- report %>%
   } %>%
   mutate(name = paste(class, spec))
 
-p <- data %>% 
+# data$name <- factor(paste(data$class, data$spec), levels = arrange(data, dps_median) %>% distinct(class, spec) %>% mutate(name = paste(class, spec)) %>% pull(name))
+# 
+# data <- crosstalk::SharedData$new(data)
+# 
+# crosstalk::filter_slider('dps', 'dps', data, ~ dps)
+# plot_ly(data, x = ~ dps, y = ~ name, type = 'box', color = ~ class, colors = pal_wow, showlegend = FALSE, line = list(color = 'grey', width = 1))
+
+p <- data %>%
   ggplot(aes(reorder(name, dps_median), dps)) +
-  geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) + 
-  coord_flip() + 
-  scale_fill_manual(values = pal_wow) + 
-  theme_minimal() + 
+  geom_boxplot(aes(fill = class), color = 'grey', alpha = 1, show.legend = FALSE) +
+  geom_text(data = distinct(data, name, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) +
+  coord_flip() +
+  scale_fill_manual(values = pal_wow) +
+  theme_minimal() +
   labs(x = NULL)
 
-ggplotly(p) %>% 
+ggplotly(p) %>%
   layout(showlegend = FALSE, yaxis = list(showticklabels = FALSE))
   
 ```
 
 
-### summary {data-height=800}
+### summary {data-height=1000}
 
 ```{r}
 
@@ -205,43 +236,49 @@ ggplotly(p, tooltip = 'class') %>%
 
 ```
 
-### covenant
+### item level
 
-```{r, fig.width=8}
+```{r}
 
-data <- filter(report, class %in% c('Hunter', 'Monk', 'Paladin', 'Shaman'), 
-               !is.na(covenant)) %>% 
-  select(class, spec, covenant, dps) %>% {
-    dat <- .
-    
-    temp <- group_by(dat, class, spec, covenant) %>% 
-      summarise(
-        dps_median = quantile(dps, probs = q, na.rm = TRUE),
-        text_pos = quantile(dps, 0.75, na.rm = TRUE), 
-        n = n(),
-        .groups = 'drop'
-      ) 
-    temp <- mutate(temp, dps_median = bayes_mean(dps_median, n))
-    
-    right_join(temp, dat, by = c('class', 'spec', 'covenant'))
-  } %>% 
-  mutate(name = paste(covenant, spec), 
-         name = tidytext::reorder_within(name, dps_median, class))
+p <- report %>% 
+  ggplot(aes(ilvl, dps)) + 
+  geom_point(size = 1, alpha = 0.1, color = 'blue') + 
+  theme_minimal()
 
-p <- data %>% 
-  ggplot(aes(name, dps)) +
-  geom_boxplot(aes(fill = covenant), color = 'grey', alpha = 1, show.legend = FALSE) + 
-  # geom_text(data = distinct(data, name, covenant, dps_median, spec), aes(name, dps_median, label = spec), nudge_y = 300, alpha = 0.6, size = 3) +
-  coord_flip() + 
-  tidytext::scale_x_reordered() + 
-  facet_wrap(~ class, scales = 'free') + 
-  scale_fill_manual(values = pal_covenant) + 
-  theme_minimal() + 
-  labs(x = NULL) + 
-  theme(axis.text = element_text(size = 15), 
-        plot.margin = unit(c(0, 0, 0, 0), 'cm'))
+ggplotly(p) %>% 
+  layout(showlegend = FALSE)
 
-p
+# data <- filter(report, class %in% c('Hunter', 'Monk', 'Paladin', 'Shaman'), 
+#                !is.na(covenant)) %>% 
+#   select(class, spec, covenant, dps) %>% {
+#     dat <- .
+#     
+#     temp <- group_by(dat, class, spec, covenant) %>% 
+#       summarise(
+#         dps_median = quantile(dps, probs = q, na.rm = TRUE),
+#         text_pos = quantile(dps, 0.75, na.rm = TRUE), 
+#         n = n(),
+#         .groups = 'drop'
+#       ) 
+#     temp <- mutate(temp, dps_median = bayes_mean(dps_median, n))
+#     
+#     right_join(temp, dat, by = c('class', 'spec', 'covenant'))
+#   } %>% 
+#   mutate(name = paste(covenant, spec), 
+#          name = tidytext::reorder_within(name, dps_median, class))
+# 
+# p <- data %>% 
+#   ggplot(aes(name, dps)) +
+#   geom_boxplot(aes(fill = covenant), color = 'grey', alpha = 1, show.legend = FALSE) +
+#   coord_flip() + 
+#   tidytext::scale_x_reordered() + 
+#   facet_wrap(~ class, scales = 'free') + 
+#   scale_fill_manual(values = pal_covenant) + 
+#   theme_minimal() + 
+#   labs(x = NULL) + 
+#   theme(axis.text = element_text(size = 15), 
+#         plot.margin = unit(c(0, 0, 0, 0), 'cm'))
+# p
 
 ```
 
